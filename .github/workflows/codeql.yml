@@ -85,6 +85,7 @@ jobs:
           'your code, for example:'
         echo '  make bootstrap'
         echo '  make release'
+        make run
         exit 1
 
     - name: Perform CodeQL Analysis
