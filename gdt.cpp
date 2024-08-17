@@ -1,14 +1,14 @@
 #include "gdt.h"
 
 GlobalDescriptorTable::GlobalDescriptorTable()
-: nullSegmentSelector(0, 0, 0),
-unusedSegmentSelector(0, 0, 0),
-codeSegmentSelector(0, 64*1024*1024, 0x9A),
-dataSegmentSelector(0, 64*1024*1024, 0x92)
+    : nullSegmentSelector(0, 0, 0),
+    unusedSegmentSelector(0, 0, 0),
+    codeSegmentSelector(0, 64*1024*1024, 0x9A),
+    dataSegmentSelector(0, 64*1024*1024, 0x92)
 {
     uint32_t i[2];
-    i[0] = (uint32_t)this;
-    i[1] = sizeof(GlobalDescriptorTable) << 16;
+    i[1] = (uint32_t)this;
+    i[0] = sizeof(GlobalDescriptorTable) << 16;
 
     asm volatile("lgdt (%0)": :"p" (((uint8_t*)i)+2));
 }
@@ -27,12 +27,13 @@ uint16_t GlobalDescriptorTable::CodeSegmentSelector()
     return (uint8_t*)&codeSegmentSelector - (uint8_t*)this;
 }
 
-GlobalDescriptorTable::SegmentDescriptor::SegmentDescriptor(uint32_t base, uint32_t limit, uint8_t flags)
+GlobalDescriptorTable::SegmentDescriptor::SegmentDescriptor(uint32_t base, uint32_t limit, uint8_t type)
 {
     uint8_t* target = (uint8_t*)this;
 
     if(limit <= 65536)
     {
+        // 16-bit address space
         target[6] = 0x40;
     }
     else
@@ -54,7 +55,7 @@ GlobalDescriptorTable::SegmentDescriptor::SegmentDescriptor(uint32_t base, uint3
     target[4] = (base >> 16) & 0xFF;
     target[7] = (base >> 24) & 0xFF;
 
-    target[5] = flags;
+    target[5] = type;
 }
 
 uint32_t GlobalDescriptorTable::SegmentDescriptor::Base()
