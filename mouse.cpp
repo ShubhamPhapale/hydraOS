@@ -1,5 +1,7 @@
 #include "mouse.h"
 
+void printf(const char*);
+
 MouseEventHandler::MouseEventHandler()
 {
 }
@@ -36,6 +38,9 @@ void MouseDriver::Activate()
 {
     offset = 0;
     buttons = 0;
+
+    if(handler != 0)
+        handler->OnActivate();
 
     commandport.Write(0xA8);
     commandport.Write(0x20);

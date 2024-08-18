@@ -68,12 +68,16 @@ class MouseToConsole : public MouseEventHandler
     public:
         MouseToConsole()
         {
+        }
+
+        virtual void OnActivate()
+        {
             uint16_t* VideoMemory = (uint16_t*)0xb8000;
             x = 40;
             y = 12;
-            VideoMemory[80*y+x] = (VideoMemory[80*y+x] & 0xF000) >> 4
-                | (VideoMemory[80*y+x] & 0x0F00) << 4
-                | (VideoMemory[80*y+x] & 0x00FF);
+            VideoMemory[80*y+x] = (VideoMemory[80*y+x] & 0x0F00) << 4
+                                | (VideoMemory[80*y+x] & 0xF000) >> 4
+                                | (VideoMemory[80*y+x] & 0x00FF);        
         }
 
         void OnMouseMove(int xoffset, int yoffset)
@@ -106,7 +110,7 @@ extern "C" void callConstructors()
         (*i)();
 }
 
-extern "C" void kernelMain(void* multiboot_structure, uint32_t /*magicnumber*/)
+extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*magicnumber*/)
 {
     printf("Hello World! Here we go again!!!!!!!!!!!\n");
 

@@ -36,7 +36,6 @@ void KeyboardDriver::Activate()
     uint8_t status = (dataport.Read() | 1) & ~0x10;
     commandport.Write(0x60); // Command 0x60 = Set Controller Command Byte
     dataport.Write(status);
-
     dataport.Write(0xf4);
 }
 
