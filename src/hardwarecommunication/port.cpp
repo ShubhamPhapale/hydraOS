@@ -1,4 +1,7 @@
-#include "port.h"
+#include <hardwarecommunication/port.h>
+
+using namespace hydraos::common;
+using namespace hydraos::hardwarecommunication;
 
 Port::Port(uint16_t portnumber) {
     this->portnumber = portnumber;

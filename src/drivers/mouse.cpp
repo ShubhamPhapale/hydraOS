@@ -1,4 +1,8 @@
-#include "mouse.h"
+#include <drivers/mouse.h>
+
+using namespace hydraos::common;
+using namespace hydraos::hardwarecommunication;
+using namespace hydraos::drivers;
 
 void printf(const char*);
 

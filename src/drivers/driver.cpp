@@ -1,4 +1,6 @@
-#include "driver.h"
+#include <drivers/driver.h>
+
+using namespace hydraos::drivers;
 
 Driver::Driver() {
     // Initialize the driver

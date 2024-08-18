@@ -1,4 +1,7 @@
-#include "interrupts.h"
+#include <hardwarecommunication/interrupts.h>
+
+using namespace hydraos::common;
+using namespace hydraos::hardwarecommunication;
 
 void printf(const char*);
 void printfHex(uint8_t);

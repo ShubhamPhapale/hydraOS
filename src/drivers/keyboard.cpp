@@ -1,4 +1,8 @@
-#include "keyboard.h"
+#include <drivers/keyboard.h>
+
+using namespace hydraos::common;
+using namespace hydraos::hardwarecommunication;
+using namespace hydraos::drivers;
 
 KeyboardEventHandler::KeyboardEventHandler()
 {
