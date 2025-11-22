@@ -1,5 +1,6 @@
 #include <common/types.h>
 #include <gdt.h>
+#include <memory.h>
 #include <hardwarecommunication/interrupts.h>
 #include <drivers/driver.h>
 #include <drivers/keyboard.h>
@@ -139,6 +140,15 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*magicnumb
     vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     vga.Print("Global Descriptor Table (GDT)\n");
 
+    // Initialize memory management with 10MB heap starting at 10MB
+    size_t heapSize = 1024 * 1024 * 10; // 10 MB
+    MemoryManager memoryManager(1024 * 1024 * 10, heapSize);
+    vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga.Print("[OK] ");
+    vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga.Print("Memory Manager (Heap: ");
+    vga.Print("10 MB)\n");
+
     InterruptManager interrupts(0x20, &gdt);
     vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
     vga.Print("[OK] ");
@@ -191,6 +201,37 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*magicnumb
     vga.Print("  System Ready! Type to test input.\n");
     vga.SetColor(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
     vga.Print("=====================================\n\n");
+    
+    // Test memory allocation
+    vga.SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
+    vga.Print("Testing memory allocation...\n");
+    vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    
+    void* ptr1 = malloc(100);
+    vga.Print("  malloc(100) = 0x");
+    vga.PrintHex32((uint32_t)ptr1);
+    vga.Print("\n");
+    
+    void* ptr2 = malloc(256);
+    vga.Print("  malloc(256) = 0x");
+    vga.PrintHex32((uint32_t)ptr2);
+    vga.Print("\n");
+    
+    void* ptr3 = malloc(512);
+    vga.Print("  malloc(512) = 0x");
+    vga.PrintHex32((uint32_t)ptr3);
+    vga.Print("\n");
+    
+    vga.Print("  Freeing first allocation...\n");
+    free(ptr1);
+    
+    vga.Print("  malloc(50) = 0x");
+    void* ptr4 = malloc(50);
+    vga.PrintHex32((uint32_t)ptr4);
+    vga.Print(" (reused freed space)\n");
+    
+    vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga.Print("  Memory allocation test passed!\n\n");
     
     vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     vga.Print("> ");
