@@ -4,6 +4,7 @@
 #include <drivers/driver.h>
 #include <drivers/keyboard.h>
 #include <drivers/mouse.h>
+#include <drivers/vga.h>
 
 using namespace hydraos;
 using namespace hydraos::common;
@@ -117,29 +118,82 @@ extern "C" void callConstructors()
 
 extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*magicnumber*/)
 {
-    printf("Hello World! Here we go again!!!!!!!!!!!\n");
+    // Initialize VGA Text Mode
+    VGATextMode vga;
+    vga.Clear();
+    
+    // Print welcome banner with colors
+    vga.SetColor(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
+    vga.Print("=====================================\n");
+    vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga.Print("    HydraOS v0.1 - System Boot\n");
+    vga.SetColor(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
+    vga.Print("=====================================\n\n");
+    
+    vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga.Print("Initializing system components...\n\n");
 
     GlobalDescriptorTable gdt;
-    InterruptManager interrupts(0x20, &gdt);
+    vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga.Print("[OK] ");
+    vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga.Print("Global Descriptor Table (GDT)\n");
 
-    printf("Initializing Hardware, Stage 1\n");
+    InterruptManager interrupts(0x20, &gdt);
+    vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga.Print("[OK] ");
+    vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga.Print("Interrupt Manager\n");
+
+    vga.SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
+    vga.Print("\nInitializing Hardware Drivers:\n");
 
     DriverManager drvManager;
         PrintfKeyboardEventHandler kbhandler;
         KeyboardDriver keyboard(&interrupts, &kbhandler);
         drvManager.AddDriver(&keyboard);
+        
+        vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+        vga.Print("  [OK] ");
+        vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+        vga.Print("Keyboard Driver\n");
 
         MouseToConsole mousehandler;
         MouseDriver mouse(&interrupts, &mousehandler);
         drvManager.AddDriver(&mouse);
+        
+        vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+        vga.Print("  [OK] ");
+        vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+        vga.Print("Mouse Driver\n");
 
-    printf("Initializing Hardware, Stage 2\n");
+    vga.SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
+    vga.Print("\nActivating all drivers...\n");
+    drvManager.ActivateAll();
+    
+    vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga.Print("[OK] ");
+    vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga.Print("All drivers activated\n");
 
-        drvManager.ActivateAll();
-
-    printf("Initializing Hardware, Stage 3\n");
-
+    vga.SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
+    vga.Print("\nEnabling interrupts...\n");
     interrupts.Activate();
+    
+    vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga.Print("[OK] ");
+    vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga.Print("Interrupts enabled\n\n");
+    
+    vga.SetColor(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
+    vga.Print("=====================================\n");
+    vga.SetColor(VGA_COLOR_LIGHT_MAGENTA, VGA_COLOR_BLACK);
+    vga.Print("  System Ready! Type to test input.\n");
+    vga.SetColor(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
+    vga.Print("=====================================\n\n");
+    
+    vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga.Print("> ");
     
     while(1);
 }
