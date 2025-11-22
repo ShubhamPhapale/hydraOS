@@ -1,15 +1,24 @@
+/**
+ * @file kernel.cpp
+ * @brief Main kernel entry point for HydraOS
+ * @author Shubham Phapale
+ * @date 2025
+ */
+
 #include <common/types.h>
 #include <gdt.h>
 #include <memory.h>
 #include <shell.h>
 #include <multitasking.h>
 #include <syscalls.h>
+#include <filesystem.h>
 #include <hardwarecommunication/interrupts.h>
 #include <drivers/driver.h>
 #include <drivers/keyboard.h>
 #include <drivers/mouse.h>
 #include <drivers/vga.h>
 #include <drivers/pit.h>
+#include <drivers/ata.h>
 
 using namespace hydraos;
 using namespace hydraos::common;
@@ -183,8 +192,22 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*magicnumb
     vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     vga.Print("Programmable Interval Timer (100 Hz)\n");
 
+    // Initialize ATA/IDE Driver (Primary Master)
+    AdvancedTechnologyAttachment ata0m(true, 0x1F0);
+    vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga.Print("[OK] ");
+    vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga.Print("ATA/IDE Driver (Primary Master)\n");
+
+    // Initialize File System
+    filesystem::FileSystem fileSystem(&ata0m);
+    vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga.Print("[OK] ");
+    vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga.Print("File System\n");
+
     // Initialize Shell
-    Shell shell(&vga, &timer);
+    Shell shell(&vga, &timer, &fileSystem);
     globalShell = &shell;
     vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
     vga.Print("[OK] ");

@@ -298,6 +298,30 @@ void VGATextMode::PrintHex32(uint32_t value)
     PrintHex16(value & 0xFFFF);
 }
 
+void VGATextMode::PrintNumber(uint32_t value)
+{
+    if(value == 0)
+    {
+        PutChar('0');
+        return;
+    }
+    
+    char buffer[11]; // Max 10 digits for uint32_t + null terminator
+    int i = 0;
+    
+    while(value > 0)
+    {
+        buffer[i++] = '0' + (value % 10);
+        value /= 10;
+    }
+    
+    // Print in reverse order
+    while(i > 0)
+    {
+        PutChar(buffer[--i]);
+    }
+}
+
 void VGATextMode::SetCursorPosition(uint8_t x, uint8_t y)
 {
     if(x < SCREEN_WIDTH && y < SCREEN_HEIGHT)
