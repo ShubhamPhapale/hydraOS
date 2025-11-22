@@ -92,6 +92,7 @@ namespace hydraos {
                 static void HandleException0x11();
                 static void HandleException0x12();
                 static void HandleException0x13();
+                static void HandleException0x80();
 
                 static hydraos::common::uint32_t HandleInterrupt(hydraos::common::uint8_t interrupt, hydraos::common::uint32_t esp);
                 hydraos::common::uint32_t DoHandleInterrupt(hydraos::common::uint8_t interrupt, hydraos::common::uint32_t esp);

@@ -57,6 +57,9 @@ HandleInterruptRequest 0x0E
 HandleInterruptRequest 0x0F
 HandleInterruptRequest 0x31
 
+# System call interrupt
+HandleException 0x80
+
 int_bottom:
     pusha
     pushl %ds

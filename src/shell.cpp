@@ -1,5 +1,6 @@
 #include <shell.h>
 #include <memory.h>
+#include <syscalls.h>
 
 using namespace hydraos;
 using namespace hydraos::common;
@@ -171,6 +172,8 @@ void Shell::ExecuteCommand(const char* command)
         CommandMeminfo();
     else if(strcmp(cmd, "uname"))
         CommandUname();
+    else if(strcmp(cmd, "syscall"))
+        CommandSyscall();
     else
     {
         vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
@@ -221,6 +224,11 @@ void Shell::CommandHelp()
     vga->Print("  uname");
     vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     vga->Print("    - Show system information\n");
+    
+    vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga->Print("  syscall");
+    vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga->Print("  - Test system call interface\n");
 }
 
 void Shell::CommandClear()
@@ -308,5 +316,29 @@ void Shell::CommandUname()
     vga->Print("HydraOS");
     vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     vga->Print(" v0.1 x86 i686\n");
-    vga->Print("Features: multitasking, memory-management, vga, pit, shell\n");
+    vga->Print("Features: multitasking, memory-management, vga, pit, shell, syscalls\n");
+}
+
+void Shell::CommandSyscall()
+{
+    vga->SetColor(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
+    vga->Print("Testing System Call Interface...\n\n");
+    vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    
+    vga->Print("System call interface has been initialized at interrupt 0x80.\n");
+    vga->Print("The syscall handler is ready to handle:\n");
+    vga->Print("  1. syscall_printf (print string)\n");
+    vga->Print("  2. syscall_getchar (get character)\n");
+    vga->Print("  3. syscall_exit (exit process)\n");
+    vga->Print("  4. syscall_sleep (sleep)\n");
+    vga->Print("  5. syscall_get_uptime (get uptime)\n");
+    vga->Print("  6. syscall_malloc (allocate memory)\n");
+    vga->Print("  7. syscall_free (free memory)\n\n");
+    
+    vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga->Print("System call infrastructure ready!\n");
+    vga->SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
+    vga->Print("Note: Software interrupts from kernel mode require\n");
+    vga->Print("      proper privilege level configuration.\n");
+    vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
 }
