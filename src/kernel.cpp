@@ -1,6 +1,7 @@
 #include <common/types.h>
 #include <gdt.h>
 #include <memory.h>
+#include <shell.h>
 #include <hardwarecommunication/interrupts.h>
 #include <drivers/driver.h>
 #include <drivers/keyboard.h>
@@ -59,24 +60,17 @@ void printfHex(uint8_t key)
     printf(foo);
 }
 
-// Global VGA pointer for keyboard handler
-VGATextMode* globalVGA = 0;
+// Global shell pointer for keyboard handler
+Shell* globalShell = 0;
 
-class PrintfKeyboardEventHandler : public KeyboardEventHandler
+class ShellKeyboardEventHandler : public KeyboardEventHandler
 {
     public:
         void OnKeyDown(char c)
         {
-            if(globalVGA != 0)
+            if(globalShell != 0)
             {
-                globalVGA->PutChar(c);
-            }
-            else
-            {
-                // Fallback to old printf if VGA not initialized
-                char* foo = " ";
-                foo[0] = c;
-                printf(foo);
+                globalShell->HandleKeyPress(c);
             }
         }
 };
@@ -133,7 +127,6 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*magicnumb
 {
     // Initialize VGA Text Mode
     VGATextMode vga;
-    globalVGA = &vga;  // Set global pointer for keyboard handler
     vga.Clear();
     
     // Print welcome banner with colors
@@ -175,11 +168,19 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*magicnumb
     vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     vga.Print("Programmable Interval Timer (100 Hz)\n");
 
+    // Initialize Shell
+    Shell shell(&vga, &timer);
+    globalShell = &shell;
+    vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga.Print("[OK] ");
+    vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga.Print("Shell\n");
+
     vga.SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
     vga.Print("\nInitializing Hardware Drivers:\n");
 
     DriverManager drvManager;
-        PrintfKeyboardEventHandler kbhandler;
+        ShellKeyboardEventHandler kbhandler;
         KeyboardDriver keyboard(&interrupts, &kbhandler);
         drvManager.AddDriver(&keyboard);
         
@@ -217,65 +218,13 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*magicnumb
     
     vga.SetColor(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
     vga.Print("=====================================\n");
-    vga.SetColor(VGA_COLOR_LIGHT_MAGENTA, VGA_COLOR_BLACK);
-    vga.Print("  System Ready! Type to test input.\n");
+    vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga.Print("     System Boot Complete!\n");
     vga.SetColor(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
-    vga.Print("=====================================\n\n");
+    vga.Print("=====================================\n");
     
-    // Test memory allocation
-    vga.SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
-    vga.Print("Testing memory allocation...\n");
-    vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
-    
-    void* ptr1 = malloc(100);
-    vga.Print("  malloc(100) = 0x");
-    vga.PrintHex32((uint32_t)ptr1);
-    vga.Print("\n");
-    
-    void* ptr2 = malloc(256);
-    vga.Print("  malloc(256) = 0x");
-    vga.PrintHex32((uint32_t)ptr2);
-    vga.Print("\n");
-    
-    void* ptr3 = malloc(512);
-    vga.Print("  malloc(512) = 0x");
-    vga.PrintHex32((uint32_t)ptr3);
-    vga.Print("\n");
-    
-    vga.Print("  Freeing first allocation...\n");
-    free(ptr1);
-    
-    vga.Print("  malloc(50) = 0x");
-    void* ptr4 = malloc(50);
-    vga.PrintHex32((uint32_t)ptr4);
-    vga.Print(" (reused freed space)\n");
-    
-    vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
-    vga.Print("  Memory allocation test passed!\n\n");
-    
-    // Test timer
-    vga.SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
-    vga.Print("Testing timer...\n");
-    vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
-    
-    vga.Print("  Uptime: ");
-    vga.PrintHex32(timer.GetMilliseconds());
-    vga.Print(" ms (");
-    vga.PrintHex32(timer.GetTicks());
-    vga.Print(" ticks)\n");
-    
-    vga.Print("  Sleeping for 1 second...\n");
-    timer.Sleep(1000);
-    
-    vga.Print("  Uptime after sleep: ");
-    vga.PrintHex32(timer.GetMilliseconds());
-    vga.Print(" ms\n");
-    
-    vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
-    vga.Print("  Timer test passed!\n\n");
-    
-    vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
-    vga.Print("> ");
+    // Start the shell
+    shell.Start();
     
     while(1);
 }

@@ -5,6 +5,7 @@ LDPARAMS = -melf_i386
 objects = obj/loader.o \
 			obj/gdt.o \
 			obj/memory.o \
+			obj/shell.o \
 			obj/drivers/driver.o \
 			obj/hardwarecommunication/port.o \
 			obj/hardwarecommunication/interruptstubs.o \
