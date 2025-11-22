@@ -6,6 +6,7 @@
 #include <drivers/keyboard.h>
 #include <drivers/mouse.h>
 #include <drivers/vga.h>
+#include <drivers/pit.h>
 
 using namespace hydraos;
 using namespace hydraos::common;
@@ -155,6 +156,13 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*magicnumb
     vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     vga.Print("Interrupt Manager\n");
 
+    // Initialize Programmable Interval Timer (100 Hz)
+    ProgrammableIntervalTimer timer(&interrupts);
+    vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga.Print("[OK] ");
+    vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga.Print("Programmable Interval Timer (100 Hz)\n");
+
     vga.SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
     vga.Print("\nInitializing Hardware Drivers:\n");
 
@@ -232,6 +240,27 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*magicnumb
     
     vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
     vga.Print("  Memory allocation test passed!\n\n");
+    
+    // Test timer
+    vga.SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
+    vga.Print("Testing timer...\n");
+    vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    
+    vga.Print("  Uptime: ");
+    vga.PrintHex32(timer.GetMilliseconds());
+    vga.Print(" ms (");
+    vga.PrintHex32(timer.GetTicks());
+    vga.Print(" ticks)\n");
+    
+    vga.Print("  Sleeping for 1 second...\n");
+    timer.Sleep(1000);
+    
+    vga.Print("  Uptime after sleep: ");
+    vga.PrintHex32(timer.GetMilliseconds());
+    vga.Print(" ms\n");
+    
+    vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga.Print("  Timer test passed!\n\n");
     
     vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     vga.Print("> ");
