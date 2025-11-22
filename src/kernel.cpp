@@ -3,6 +3,7 @@
 #include <memory.h>
 #include <shell.h>
 #include <multitasking.h>
+#include <syscalls.h>
 #include <hardwarecommunication/interrupts.h>
 #include <drivers/driver.h>
 #include <drivers/keyboard.h>
@@ -200,6 +201,13 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*magicnumb
     vga.Print("[OK] ");
     vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     vga.Print("Task Manager (2 tasks)\n");
+
+    // Initialize System Call Handler (interrupt 0x80)
+    SystemCallHandler syscallHandler(&interrupts, 0x80, &vga);
+    vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga.Print("[OK] ");
+    vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga.Print("System Call Handler (int 0x80)\n");
 
     vga.SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
     vga.Print("\nInitializing Hardware Drivers:\n");

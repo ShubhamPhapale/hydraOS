@@ -30,6 +30,7 @@ namespace hydraos
             void CommandAbout();
             void CommandMeminfo();
             void CommandUname();
+            void CommandSyscall();
             
             void PrintPrompt();
             
