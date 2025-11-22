@@ -169,6 +169,8 @@ void Shell::ExecuteCommand(const char* command)
         CommandAbout();
     else if(strcmp(cmd, "meminfo"))
         CommandMeminfo();
+    else if(strcmp(cmd, "uname"))
+        CommandUname();
     else
     {
         vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
@@ -214,6 +216,11 @@ void Shell::CommandHelp()
     vga->Print("  meminfo");
     vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     vga->Print("  - Show memory information\n");
+    
+    vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga->Print("  uname");
+    vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga->Print("    - Show system information\n");
 }
 
 void Shell::CommandClear()
@@ -293,4 +300,13 @@ void Shell::CommandMeminfo()
     vga->Print("  Heap start: 0x00A00000 (10 MB)\n");
     vga->Print("  Heap size:  10 MB\n");
     vga->Print("  Allocation: First-fit with coalescing\n");
+}
+
+void Shell::CommandUname()
+{
+    vga->SetColor(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
+    vga->Print("HydraOS");
+    vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga->Print(" v0.1 x86 i686\n");
+    vga->Print("Features: multitasking, memory-management, vga, pit, shell\n");
 }
