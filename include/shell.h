@@ -7,11 +7,18 @@
 
 namespace hydraos
 {
+    // Forward declaration
+    namespace filesystem
+    {
+        class FileSystem;
+    }
+    
     class Shell
     {
         private:
             drivers::VGATextMode* vga;
             drivers::ProgrammableIntervalTimer* timer;
+            filesystem::FileSystem* fileSystem;
             char commandBuffer[256];
             hydraos::common::uint8_t bufferIndex;
             
@@ -32,11 +39,18 @@ namespace hydraos
             void CommandUname();
             void CommandSyscall();
             void CommandDisk();
+            void CommandFormat();
+            void CommandMount();
+            void CommandLs();
+            void CommandTouch(const char* args);
+            void CommandWrite(const char* args);
+            void CommandCat(const char* args);
+            void CommandRm(const char* args);
             
             void PrintPrompt();
             
         public:
-            Shell(drivers::VGATextMode* vgaDriver, drivers::ProgrammableIntervalTimer* timerDriver);
+            Shell(drivers::VGATextMode* vgaDriver, drivers::ProgrammableIntervalTimer* timerDriver, filesystem::FileSystem* filesystem);
             ~Shell();
             
             void HandleKeyPress(char c);

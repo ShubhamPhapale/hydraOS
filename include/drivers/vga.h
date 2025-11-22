@@ -88,6 +88,7 @@ namespace hydraos
                 void PrintHex(hydraos::common::uint8_t value);
                 void PrintHex16(hydraos::common::uint16_t value);
                 void PrintHex32(hydraos::common::uint32_t value);
+                void PrintNumber(hydraos::common::uint32_t value);
                 void SetCursorPosition(hydraos::common::uint8_t x, hydraos::common::uint8_t y);
                 void GetCursorPosition(hydraos::common::uint8_t* x, hydraos::common::uint8_t* y);
         };

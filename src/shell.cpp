@@ -1,16 +1,19 @@
 #include <shell.h>
 #include <memory.h>
 #include <syscalls.h>
+#include <filesystem.h>
 #include <drivers/ata.h>
 
 using namespace hydraos;
 using namespace hydraos::common;
 using namespace hydraos::drivers;
+using namespace hydraos::filesystem;
 
-Shell::Shell(VGATextMode* vgaDriver, ProgrammableIntervalTimer* timerDriver)
+Shell::Shell(VGATextMode* vgaDriver, ProgrammableIntervalTimer* timerDriver, FileSystem* filesystem)
 {
     this->vga = vgaDriver;
     this->timer = timerDriver;
+    this->fileSystem = filesystem;
     bufferIndex = 0;
     
     for(int i = 0; i < 256; i++)
@@ -85,7 +88,10 @@ void Shell::Start()
     vga->SetColor(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
     vga->Print("=====================================\n");
     vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
-    vga->Print("Type 'help' for available commands\n\n");
+    vga->Print("Type 'help' for available commands\n");
+    vga->SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
+    vga->Print("Tip: Run 'format' then 'mount' to use filesystem\n\n");
+    vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     
     PrintPrompt();
 }
@@ -177,6 +183,20 @@ void Shell::ExecuteCommand(const char* command)
         CommandSyscall();
     else if(strcmp(cmd, "disk"))
         CommandDisk();
+    else if(strcmp(cmd, "format"))
+        CommandFormat();
+    else if(strcmp(cmd, "mount"))
+        CommandMount();
+    else if(strcmp(cmd, "ls"))
+        CommandLs();
+    else if(strcmp(cmd, "touch"))
+        CommandTouch(args);
+    else if(strcmp(cmd, "write"))
+        CommandWrite(args);
+    else if(strcmp(cmd, "cat"))
+        CommandCat(args);
+    else if(strcmp(cmd, "rm"))
+        CommandRm(args);
     else
     {
         vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
@@ -237,6 +257,45 @@ void Shell::CommandHelp()
     vga->Print("  disk");
     vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     vga->Print("     - Test ATA/IDE disk operations\n");
+    
+    vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga->Print("  format");
+    vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga->Print("   - Format the file system\n");
+    
+    vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga->Print("  mount");
+    vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga->Print("    - Mount the file system\n");
+    
+    vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga->Print("  ls");
+    vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga->Print("       - List files\n");
+    
+    vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga->Print("  touch");
+    vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga->Print("    - Create a file\n");
+    
+    vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga->Print("  write");
+    vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga->Print("    - Write text to a file\n");
+    
+    vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga->Print("  cat");
+    vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga->Print("      - Display file contents\n");
+    
+    vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga->Print("  rm");
+    vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga->Print("       - Delete a file\n");
+    
+    vga->Print("\n");
+    vga->SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
+    vga->Print("Filesystem workflow: format -> mount -> touch/write/cat/rm\n");
 }
 
 void Shell::CommandClear()
@@ -293,15 +352,26 @@ void Shell::CommandAbout()
     vga->Print("Built from scratch in C++ and Assembly\n\n");
     
     vga->SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
+    vga->Print("Author:\n");
+    vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga->Print("  Shubham Phapale\n");
+    vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga->Print("  GitHub: ShubhamPhapale\n\n");
+    
+    vga->SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
     vga->Print("Features:\n");
     vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     vga->Print("  - Protected mode with GDT\n");
     vga->Print("  - Interrupt handling (IDT, PIC)\n");
     vga->Print("  - VGA text mode with colors\n");
     vga->Print("  - Keyboard and mouse drivers\n");
-    vga->Print("  - Heap memory management\n");
+    vga->Print("  - Heap memory management (10MB)\n");
     vga->Print("  - Programmable Interval Timer\n");
-    vga->Print("  - Interactive shell\n\n");
+    vga->Print("  - Cooperative multitasking\n");
+    vga->Print("  - System calls (int 0x80)\n");
+    vga->Print("  - ATA/IDE disk driver\n");
+    vga->Print("  - Simple inode-based filesystem\n");
+    vga->Print("  - Interactive shell with 16 commands\n\n");
     
     vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
     vga->Print("Developed: 2025\n");
@@ -324,7 +394,8 @@ void Shell::CommandUname()
     vga->Print("HydraOS");
     vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     vga->Print(" v0.1 x86 i686\n");
-    vga->Print("Features: multitasking, memory-management, vga, pit, shell, syscalls, ata\n");
+    vga->Print("Author: Shubham Phapale\n");
+    vga->Print("Features: multitasking, memory-management, vga, pit, shell, syscalls, ata, filesystem\n");
 }
 
 void Shell::CommandSyscall()
@@ -453,5 +524,221 @@ void Shell::CommandDisk()
         vga->Print("[ERROR] ");
         vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
         vga->Print("Failed to allocate buffer\n");
+    }
+}
+
+void Shell::CommandFormat()
+{
+    vga->SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
+    vga->Print("Formatting file system...\n");
+    
+    if(fileSystem->Format("HydraOS"))
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+        vga->Print("File system formatted successfully!\n");
+    }
+    else
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+        vga->Print("Failed to format file system.\n");
+    }
+}
+
+void Shell::CommandMount()
+{
+    vga->SetColor(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
+    vga->Print("Mounting file system...\n");
+    
+    if(fileSystem->Mount())
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+        vga->Print("File system mounted successfully!\n");
+    }
+    else
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+        vga->Print("Failed to mount file system. Try 'format' first.\n");
+    }
+}
+
+void Shell::CommandLs()
+{
+    vga->SetColor(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
+    vga->Print("Files:\n");
+    
+    int32_t count = 0;
+    for(int i = 0; i < 64; i++)
+    {
+        // Check if this inode is in use
+        if(fileSystem->inodes[i].type == INODE_TYPE_REGULAR && fileSystem->inodes[i].name[0] != '\0')
+        {
+            char filename[33];
+            
+            // Get filename and size from inode
+            for(int j = 0; j < 32; j++)
+                filename[j] = fileSystem->inodes[i].name[j];
+            filename[32] = '\0';
+            
+            vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+            vga->Print("  ");
+            vga->Print(filename);
+            vga->Print(" (");
+            vga->PrintNumber(fileSystem->inodes[i].size);
+            vga->Print(" bytes)\n");
+            count++;
+        }
+    }
+    
+    if(count == 0)
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
+        vga->Print("  (empty)\n");
+        vga->Print("  Tip: Use 'format' and 'mount' if not done yet\n");
+    }
+    
+    vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga->Print("Total: ");
+    vga->PrintNumber(count);
+    vga->Print(" file(s)\n");
+}
+
+void Shell::CommandTouch(const char* args)
+{
+    if(args[0] == '\0')
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+        vga->Print("Usage: touch <filename>\n");
+        return;
+    }
+    
+    int32_t fd = fileSystem->CreateFile(args);
+    if(fd >= 0)
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+        vga->Print("File '");
+        vga->Print(args);
+        vga->Print("' created.\n");
+    }
+    else
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+        vga->Print("Failed to create file.\n");
+        vga->SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
+        vga->Print("Make sure to run 'format' and 'mount' first.\n");
+    }
+}
+
+void Shell::CommandWrite(const char* args)
+{
+    if(args[0] == '\0')
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+        vga->Print("Usage: write <filename>\n");
+        return;
+    }
+    
+    // Find the file
+    int32_t fd = fileSystem->OpenFile(args);
+    if(fd < 0)
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+        vga->Print("File not found. Use 'touch' to create it first.\n");
+        return;
+    }
+    
+    // Write some test data
+    const char* testData = "Hello from HydraOS filesystem!\nThis is a test file.\n";
+    uint32_t len = 0;
+    while(testData[len] != '\0') len++;
+    
+    if(fileSystem->WriteFile(fd, (uint8_t*)testData, len))
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+        vga->Print("Wrote ");
+        vga->PrintNumber(len);
+        vga->Print(" bytes to '");
+        vga->Print(args);
+        vga->Print("'\n");
+    }
+    else
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+        vga->Print("Failed to write to file.\n");
+    }
+}
+
+void Shell::CommandCat(const char* args)
+{
+    if(args[0] == '\0')
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+        vga->Print("Usage: cat <filename>\n");
+        return;
+    }
+    
+    // Find the file
+    int32_t fd = fileSystem->OpenFile(args);
+    if(fd < 0)
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+        vga->Print("File not found.\n");
+        return;
+    }
+    
+    // Get file size using filename
+    uint32_t size = fileSystem->GetFileSize(args);
+    if(size == 0)
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
+        vga->Print("(empty file)\n");
+        return;
+    }
+    
+    // Allocate buffer and read
+    uint8_t* buffer = (uint8_t*)malloc(size + 1);
+    if(buffer == 0)
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+        vga->Print("Out of memory.\n");
+        return;
+    }
+    
+    if(fileSystem->ReadFile(fd, buffer, size))
+    {
+        buffer[size] = '\0';  // Null terminate
+        vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+        vga->Print((char*)buffer);
+        if(buffer[size-1] != '\n')
+            vga->Print("\n");
+    }
+    else
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+        vga->Print("Failed to read file.\n");
+    }
+    
+    free(buffer);
+}
+
+void Shell::CommandRm(const char* args)
+{
+    if(args[0] == '\0')
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+        vga->Print("Usage: rm <filename>\n");
+        return;
+    }
+    
+    if(fileSystem->DeleteFile(args))
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+        vga->Print("File '");
+        vga->Print(args);
+        vga->Print("' deleted.\n");
+    }
+    else
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+        vga->Print("Failed to delete file. File may not exist.\n");
     }
 }

@@ -8,6 +8,7 @@ objects = obj/loader.o \
 			obj/shell.o \
 			obj/multitasking.o \
 			obj/syscalls.o \
+			obj/filesystem.o \
 			obj/drivers/driver.o \
 			obj/hardwarecommunication/port.o \
 			obj/hardwarecommunication/interruptstubs.o \
@@ -30,12 +31,21 @@ obj/%.o: src/%.s
 mykernel.bin: linker.ld $(objects)
 	ld $(LDPARAMS) -T $< -o $@ $(objects)
 
+# Create disk image if it doesn't exist
+disk.img:
+	@echo "Creating virtual disk (10MB)..."
+	qemu-img create -f raw disk.img 10M
+
 install: mykernel.bin
 	sudo cp $< /boot/mykernel.bin
 
 .PHONY: clean
 clean:
 	rm -rf obj mykernel.bin mykernel.iso
+
+.PHONY: clean-all
+clean-all: clean
+	rm -f disk.img
 
 mykernel.iso: mykernel.bin
 	mkdir iso
@@ -56,6 +66,6 @@ mykernel.iso: mykernel.bin
 # 	(killall VirtualBox && sleep 1) || true
 # 	VirtualBox --startvm "My Operating System" &
 
-run: mykernel.iso
+run: mykernel.iso disk.img
 	(killall qemu-system-i386 && sleep 1) || true
-	qemu-system-i386 -cdrom mykernel.iso &
+	qemu-system-i386 -cdrom mykernel.iso -drive file=disk.img,format=raw &
