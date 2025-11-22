@@ -1,6 +1,7 @@
 #include <shell.h>
 #include <memory.h>
 #include <syscalls.h>
+#include <drivers/ata.h>
 
 using namespace hydraos;
 using namespace hydraos::common;
@@ -174,6 +175,8 @@ void Shell::ExecuteCommand(const char* command)
         CommandUname();
     else if(strcmp(cmd, "syscall"))
         CommandSyscall();
+    else if(strcmp(cmd, "disk"))
+        CommandDisk();
     else
     {
         vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
@@ -229,6 +232,11 @@ void Shell::CommandHelp()
     vga->Print("  syscall");
     vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     vga->Print("  - Test system call interface\n");
+    
+    vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga->Print("  disk");
+    vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga->Print("     - Test ATA/IDE disk operations\n");
 }
 
 void Shell::CommandClear()
@@ -316,7 +324,7 @@ void Shell::CommandUname()
     vga->Print("HydraOS");
     vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     vga->Print(" v0.1 x86 i686\n");
-    vga->Print("Features: multitasking, memory-management, vga, pit, shell, syscalls\n");
+    vga->Print("Features: multitasking, memory-management, vga, pit, shell, syscalls, ata\n");
 }
 
 void Shell::CommandSyscall()
@@ -341,4 +349,109 @@ void Shell::CommandSyscall()
     vga->Print("Note: Software interrupts from kernel mode require\n");
     vga->Print("      proper privilege level configuration.\n");
     vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+}
+
+void Shell::CommandDisk()
+{
+    vga->SetColor(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
+    vga->Print("Testing ATA/IDE Disk Driver...\n\n");
+    vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    
+    // Initialize primary master ATA drive (0x1F0 port base)
+    AdvancedTechnologyAttachment ata0m(true, 0x1F0);
+    
+    vga->Print("Identifying primary master drive...\n");
+    ata0m.Identify();
+    vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga->Print("[OK] ");
+    vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga->Print("Drive identified\n\n");
+    
+    // Test read operation
+    vga->Print("Testing sector read (sector 0)...\n");
+    uint8_t* buffer = (uint8_t*)malloc(512);
+    
+    if(buffer != 0)
+    {
+        // Read sector 0 (boot sector)
+        ata0m.Read28(0, buffer, 1);
+        
+        vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+        vga->Print("[OK] ");
+        vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+        vga->Print("Sector read complete\n");
+        
+        // Display first 16 bytes
+        vga->Print("First 16 bytes: ");
+        for(int i = 0; i < 16; i++)
+        {
+            vga->PrintHex(buffer[i]);
+            vga->Print(" ");
+        }
+        vga->Print("\n\n");
+        
+        // Test write operation (to sector 100 to avoid overwriting important data)
+        vga->Print("Testing sector write (sector 100)...\n");
+        
+        // Prepare test data
+        for(int i = 0; i < 512; i++)
+            buffer[i] = i % 256;
+        
+        // Write test data
+        ata0m.Write28(100, buffer, 1);
+        
+        vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+        vga->Print("[OK] ");
+        vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+        vga->Print("Sector write complete\n");
+        
+        // Read it back to verify
+        for(int i = 0; i < 512; i++)
+            buffer[i] = 0;
+        
+        ata0m.Read28(100, buffer, 1);
+        
+        vga->Print("Read back first 16 bytes: ");
+        for(int i = 0; i < 16; i++)
+        {
+            vga->PrintHex(buffer[i]);
+            vga->Print(" ");
+        }
+        vga->Print("\n");
+        
+        // Verify
+        bool success = true;
+        for(int i = 0; i < 512; i++)
+        {
+            if(buffer[i] != (i % 256))
+            {
+                success = false;
+                break;
+            }
+        }
+        
+        if(success)
+        {
+            vga->SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+            vga->Print("\n[SUCCESS] ");
+            vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+            vga->Print("Read/Write verification passed!\n");
+        }
+        else
+        {
+            vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+            vga->Print("\n[FAILED] ");
+            vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+            vga->Print("Read/Write verification failed!\n");
+        }
+        
+        free(buffer);
+    }
+    else
+    {
+        vga->SetColor(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+        vga->Print("[ERROR] ");
+        vga->SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+        vga->Print("Failed to allocate buffer\n");
+    }
 }
