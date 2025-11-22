@@ -27,7 +27,7 @@ void MouseEventHandler::OnMouseMove(int x, int y)
 }
 
 MouseDriver::MouseDriver(InterruptManager* manager, MouseEventHandler* handler)
-: InterruptHandler(0x2C, manager),
+: InterruptHandler(manager->HardwareInterruptOffset() + 0x0C, manager),
 dataport(0x60),
 commandport(0x64)
 {
@@ -46,14 +46,27 @@ void MouseDriver::Activate()
     if(handler != 0)
         handler->OnActivate();
 
+    // Clear the output buffer
+    while(commandport.Read() & 0x1)
+        dataport.Read();
+
+    // Enable the auxiliary mouse device
     commandport.Write(0xA8);
+    
+    // Read Controller Command Byte
     commandport.Write(0x20);
+    while(!(commandport.Read() & 0x1))
+        ;
     uint8_t status = dataport.Read() | 2;
+    
+    // Write Controller Command Byte
     commandport.Write(0x60);
     dataport.Write(status);
+    
+    // Send command to mouse
     commandport.Write(0xD4);
-    dataport.Write(0xF4);
-    dataport.Read();
+    dataport.Write(0xF4);  // Enable data reporting
+    dataport.Read();  // Acknowledge
 }
 
 uint32_t MouseDriver::HandleInterrupt(uint32_t esp)

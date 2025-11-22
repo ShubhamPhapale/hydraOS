@@ -59,14 +59,25 @@ void printfHex(uint8_t key)
     printf(foo);
 }
 
+// Global VGA pointer for keyboard handler
+VGATextMode* globalVGA = 0;
+
 class PrintfKeyboardEventHandler : public KeyboardEventHandler
 {
     public:
         void OnKeyDown(char c)
         {
-            char* foo = " ";
-            foo[0] = c;
-            printf(foo);
+            if(globalVGA != 0)
+            {
+                globalVGA->PutChar(c);
+            }
+            else
+            {
+                // Fallback to old printf if VGA not initialized
+                char* foo = " ";
+                foo[0] = c;
+                printf(foo);
+            }
         }
 };
 
@@ -122,6 +133,7 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*magicnumb
 {
     // Initialize VGA Text Mode
     VGATextMode vga;
+    globalVGA = &vga;  // Set global pointer for keyboard handler
     vga.Clear();
     
     // Print welcome banner with colors
