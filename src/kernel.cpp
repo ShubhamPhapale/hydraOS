@@ -2,6 +2,7 @@
 #include <gdt.h>
 #include <memory.h>
 #include <shell.h>
+#include <multitasking.h>
 #include <hardwarecommunication/interrupts.h>
 #include <drivers/driver.h>
 #include <drivers/keyboard.h>
@@ -123,6 +124,19 @@ extern "C" void callConstructors()
         (*i)();
 }
 
+// Demo task functions
+void taskA()
+{
+    while(true)
+        ;
+}
+
+void taskB()
+{
+    while(true)
+        ;
+}
+
 extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*magicnumber*/)
 {
     // Initialize VGA Text Mode
@@ -175,6 +189,17 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*magicnumb
     vga.Print("[OK] ");
     vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
     vga.Print("Shell\n");
+
+    // Initialize Task Manager
+    TaskManager taskManager;
+    Task task1(&gdt, taskA);
+    Task task2(&gdt, taskB);
+    taskManager.AddTask(&task1);
+    taskManager.AddTask(&task2);
+    vga.SetColor(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga.Print("[OK] ");
+    vga.SetColor(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
+    vga.Print("Task Manager (2 tasks)\n");
 
     vga.SetColor(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK);
     vga.Print("\nInitializing Hardware Drivers:\n");

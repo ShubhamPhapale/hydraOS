@@ -29,6 +29,7 @@ namespace hydraos
             void CommandUptime();
             void CommandAbout();
             void CommandMeminfo();
+            void CommandUname();
             
             void PrintPrompt();
             
